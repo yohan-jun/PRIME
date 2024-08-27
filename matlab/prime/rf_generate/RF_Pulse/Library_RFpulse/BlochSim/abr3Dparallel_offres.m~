@@ -1,0 +1,66 @@
+function [angle1, angle2] = abr3Dparallel_offres(rf,S,gx,gy,gz,x,y,z,t,phase)
+
+% rf is the complex rf vector
+% S is a complex B map each column representing each coil
+
+% EACH column of S is organise in run of y first then x then z !!!!!!!!!!!!
+
+% gx is how the x-direction gradient changes with time :is a vector , similar for gy and gz
+% x,y,z are the vector specifying the range 
+% t is the time length of the pulse in ms
+
+l = length(gx);
+timegap = t/l;
+gamma = 2*pi*4.258;
+constant1 = gamma*timegap;
+
+%MADE rf INTO A MATRIX WHERE each column is the rf for each coil
+
+B_seperate = reshape(rf,l,[]);
+
+%initialisation
+lx = length(x);ly = length(y);lz = length(z);
+A = ones(ly,lx,lz);
+B = zeros(ly,lx,lz);
+X_cube = B;Y_cube = B;Z_cube = B; 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+for count = 1:lx
+    X_cube(:,count,:) = x(count);
+end
+for count = 1:ly
+    Y_cube(count,:,:) = y(count);
+end
+for count = 1:lz
+    Z_cube(:,:,count) = z(count);
+end
+
+S1 = reshape(S(:,1),ly,lx,lz); S2 = reshape(S(:,2),ly,lx,lz);
+S3 = reshape(S(:,3),ly,lx,lz); S4 = reshape(S(:,4),ly,lx,lz);
+S5 = reshape(S(:,5),ly,lx,lz); S6 = reshape(S(:,6),ly,lx,lz);
+S7 = reshape(S(:,7),ly,lx,lz); S8 = reshape(S(:,8),ly,lx,lz);
+
+phase = 2*pi*f_offset*timegap;
+for count = 1:l
+    RFsum =  S1*B_seperate(count,1)+S2*B_seperate(count,2)+S3*B_seperate(count,3)+S4*B_seperate(count,4)+S5*B_seperate(count,5)+S6*B_seperate(count,6)+S7*B_seperate(count,7)+S8*B_seperate(count,8);
+    Bx = real(RFsum); By = imag(RFsum);
+    G = gx(count)*X_cube + gy(count)*Y_cube + gz(count)*Z_cube;
+    norm = sqrt( Bx.^2 + By.^2+ G.^2);
+    angle = -constant1*norm;
+    index1 = angle==0; norm(index1) =1;%dummie value so will not be dividing by zero when calculate direction
+    index2 = angle~=0;
+    direction1 = Bx./norm;
+    direction2 = By./norm;
+    direction3 = G./norm;
+    alpha = cos(angle/2) - i*direction3.*sin(angle/2);
+    beta = -i*(direction1 + i*direction2).*sin(angle/2);
+    Anew = alpha.*A - conj(beta).*B;
+    Bnew = beta.*A + conj(alpha).*B;
+    A(index2) = Anew(index2); B(index2) = Bnew(index2);                
+end
+angle1 = A;
+angle2 = B;
+
+
+ 

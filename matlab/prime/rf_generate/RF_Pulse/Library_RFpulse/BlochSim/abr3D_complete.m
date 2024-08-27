@@ -1,0 +1,81 @@
+% Kawin Setsompop June 2008
+
+function [angle1, angle2, Mxy_total] = abr3D_complete(Bx,By,gx,gy,gz,x,y,z,t,B0_Hz,Bmain,T2map)
+
+% Bx is the excitation field (ie rf) : is a vector, By is used if the rf is
+% not in phase, o.w. it is set to a zero vector
+% gx is how the x-direction gradient changes with time :is a vector , similar for gy and gz
+% x,y,z are the vector specifying the range 
+% t is the time length of the pulse in ms
+% B0_Hz is a matrix of B0 in Hz
+% Bmain is the main field (use to account for concomitant field)
+% T2map is use to account for decaying behavior 
+
+%%T2 is currently not implement properly so set it to a high value so it doesnt have an effect e.g. T2map = 10000*ones(size(B0_Hz)); 
+
+l = length(Bx);
+timegap = t/l;
+gamma = 2*pi*4.258;
+constant1 = gamma*timegap;
+
+%initialisation
+A = ones(length(y),length(x),length(z));
+I = A;
+B = zeros(length(y),length(x),length(z));
+X_cube = B;Y_cube = B;Z_cube = B; 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for count = 1:length(x)
+    X_cube(:,count,:) = x(count);
+end
+for count = 1:length(y)
+    Y_cube(count,:,:) = y(count);
+end
+for count = 1:length(z)
+    Z_cube(:,:,count) = z(count);
+end
+
+%B0
+if (length(B0_Hz) ~= 1)
+    phase = 2*pi*B0_Hz*timegap*10^-3;
+    GaussPhase_matrix = (phase/constant1); %If given a 3D B0map
+else
+    phase = 2*pi*B0_Hz*timegap*10^-3;
+    GaussPhase_matrix = repmat((phase/constant1),[1,1,length(z)]); %assume no phase variation in Z    
+end
+
+%concomitant
+constant2 = (1/(Bmain*10000));
+Concom1 =  (constant2/8) * [ X_cube.^2 + Y_cube.^2 ];
+Concom2 =  (constant2/2) * [ Z_cube.^2 ];
+Concom3 =  (constant2/2) * [ X_cube.*Z_cube ];
+Concom4 =  (constant2/2) * [ Y_cube.*Z_cube ];
+gxAgy_sq = gx.^2 + gy.^2; gz_sq = gz.^2; 
+gxgz = gx.*gz; gygz = gy.*gz;
+
+%T2
+Mxy_lastStep = zeros(size(X_cube));
+Mxy_total = zeros(size(X_cube));
+RevTimeStep = [(l-1):-1:0];
+
+for count = 1:l
+    G_concom = Concom1*gz_sq(count) + Concom2*gxAgy_sq(count) - Concom3*gxgz(count) - Concom4*gygz(count);
+    G = gx(count)*X_cube + gy(count)*Y_cube + gz(count)*Z_cube + GaussPhase_matrix + G_concom;
+    norm = sqrt( Bx(count)^2*I + By(count)^2*I+ G.^2);
+    angle = -constant1*norm;
+    index1 = angle==0; norm(index1) =1;%dummie value so will not be dividing by zero when calculate direction
+    index2 = angle~=0;
+    direction1 = Bx(count)*I./norm;
+    direction2 = By(count)*I./norm;
+    direction3 = G./norm;
+    alpha = cos(angle/2) - i*direction3.*sin(angle/2);
+    beta = -i*(direction1 + i*direction2).*sin(angle/2);
+    Anew = alpha.*A - conj(beta).*B;
+    Bnew = beta.*A + conj(alpha).*B;
+    A(index2) = Anew(index2); B(index2) = Bnew(index2); 
+    Mxy_current = 2*conj(A).*B;
+    Mxy_total = Mxy_total + (Mxy_current - Mxy_lastStep).*exp(-(timegap*RevTimeStep(count))./T2map); 
+    Mxy_lastStep = Mxy_current;
+end
+angle1 = A;
+angle2 = B;
+

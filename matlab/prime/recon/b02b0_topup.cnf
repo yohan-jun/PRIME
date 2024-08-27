@@ -1,0 +1,33 @@
+# Resolution (knot-spacing) of warps in mm
+#--warpres=20,16,14,12,10,6,4,4,4
+--warpres=20,16,14,12,10,6,4,2,1
+# Subsampling level (a value of 2 indicates that a 2x2x2 neighbourhood is collapsed to 1 voxel)
+#--subsamp=2,2,2,2,2,1,1,1,1
+--subsamp=4,4,2,2,2,1,1,1,1
+# FWHM of gaussian smoothing
+--fwhm=8,6,4,3,3,2,1,0,0
+# Maximum number of iterations
+#--miter=5,5,5,5,5,10,10,20,20
+--miter=5,5,5,5,5,10,10,10,10
+# Relative weight of regularisation
+--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001
+# If set to 1 lambda is multiplied by the current average squared difference
+--ssqlambda=1
+# Regularisation model
+--regmod=bending_energy
+# If set to 1 movements are estimated along with the field
+--estmov=1,1,1,1,1,0,0,0,0
+# 0=Levenberg-Marquardt, 1=Scaled Conjugate Gradient
+--minmet=0,0,0,0,0,1,1,1,1
+# Quadratic or cubic splines
+--splineorder=3
+# Precision for calculation and storage of Hessian
+--numprec=double
+# Linear or spline interpolation
+--interp=spline
+# If set to 1 the images are individually scaled to a common mean intensity 
+--scale=1
+# --warpres=22,17.6,15.4,13.2,11,6.6,4.4,2.2,1.1 ( we use multiples of the image resolution for the sub sampling as suggested in the manual)
+# --subsamp=4,4,2,2,2,1,1,1,1 (increase the sub sampling for the high resolution; the images dimensions must be dividable by 4; maybe you have to dublicate slides/rows coloms)
+# --miter=5,5,5,5,5,10,10,10,10 (reduce the number of iterations in the last 2 steps to reduce "overfitting" at low SNR
+# --estmov=0,0,0,0,0,0,0,0,0 (if AP-PA are acquired immediately one after the other)

@@ -1,0 +1,92 @@
+function [rf] =  pauly_slice_selection(type,TBW)
+
+if nargin == 0
+    TBW = 4;
+    type = sprintf('ex'); %'inv'(inversion), 'st' (small tip),'ex' (90)
+    angle = pi/6;
+end
+
+gmax = 3.5; smax = 15000;
+oversample = 5;
+zt = 0.5;Ts = 1*10^-5;
+kzt = TBW/zt;%total kz (+ and -)    
+gz1 = mintimegrad(50,[0],[0],[-(kzt/2)],Ts,gmax,smax,0,3); 
+gz2 = mintimegrad(50,[0],[0],[(kzt)],Ts,gmax,smax,0,3);
+g_low = [gz1;gz2];
+g_total = Resample(g_low,oversample,'pchip').';  
+
+g_avg = ([0; g_total] + [g_total; 0] )/2; g_avg = g_avg(1:end-1,:);
+k_total = [(cumsum(g_avg)*4258*Ts/oversample)];
+
+g_total = g_total(end:-1:1,:); 
+k_total =  k_total(end:-1:1,:);
+g_used = g_total(1:length(gz2)*oversample); %only allow to used this bit
+k_used = k_total(1:length(gz2)*oversample);
+
+z = -10:0.01:10;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Pauly code
+
+rf_ideal = dzrf(160,TBW,type,'ms');
+k_ideal = -(((1:160)-81)/80)*kzt/2;
+rf = interp1(k_ideal,rf_ideal,k_used,'pchip');
+rf = rf .* abs(g_used);
+rf_total = [rf; zeros(size(gz1))*oversample];
+rf_sinc = [z_rf(kzt,k_used,g_total(1:length(gz2)*oversample)); zeros(size(gz1))*oversample];
+
+rf_sum_ideal = angle/(2*pi*4258*Ts/oversample);
+rf_total = (rf_total/sum(abs(rf_total))) *rf_sum_ideal;%assume the pulse is real!!!
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+figure(1);clf;subplot(2,2,1);
+plot(real(rf_total),'r'); hold on; 
+plot(real(rf_sinc),'b');hold off; title('Pauly RF is Red, sinc/pinv is Blue')
+subplot(2,2,2)
+plot(g_total,'r');hold on;
+plot(k_total,'b');hold off; title('G is red, k is blue')
+
+%simulate result%%%%%%%%%%%
+Bx = real(rf_total); By = imag(rf_total);
+gz = g_total;gx = zeros(size(gz));gy = gx;
+x = 0; y = 0;
+[angle1, angle2] = abr3D(Bx,By,gx,gy,gz,x,y,z,Ts/oversample*1e3*length(Bx));
+if type == 'se'
+    slice = i*(angle2.^2);
+elseif type == 'ex'|type == 'st'
+   slice = 2*conj(angle1).*angle2;
+elseif type == 'inv'
+    slice =  (angle1.*conj(angle1) - angle2.*conj(angle2))  -1 ;%-1 so can differentiate btw up and down mz
+end
+
+slice = 2*conj(angle1).*angle2;
+subplot(2,2,3);plot(squeeze(abs(slice)));title('Pauly slice selection'); 
+%%%%%%%%%%%
+Bx = real(rf_sinc); By = imag(rf_sinc);
+[angle1, angle2] = abr3D(Bx,By,gx,gy,gz,x,y,z,Ts/oversample*1e3*length(Bx));
+
+if type == 'se'
+    slice = i*(angle2.^2);
+elseif (type == 'ex'|type == 'st')
+   slice = 2*conj(angle1).*angle2;
+elseif type == 'inv'
+    slice =  (angle1.*conj(angle1) - angle2.*conj(angle2))  -1 ;%-1 so can differentiate btw up and down mz
+end
+
+subplot(2,2,4);plot(squeeze(abs(slice)));title('sinc slice selection');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function g_high = Resample(g,oversample,type)
+
+x = 0:(length(g))+1;
+xi = 0.5+(1/oversample)/2:(1/oversample):length(g)+0.5-(1/oversample)/2;
+y = [0; g; 0];
+g_high = interp1(x,y,xi,type);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function rf = z_rf(kzt,kz,gz)
+
+x = kz/(kzt/2);
+m = 1;
+snc = sin(m*2*pi*x+0.00001)./(m*2*pi*x+0.00001);
+rf = snc.*(0.54+0.46*cos(pi*x));
+rf = rf .* abs(gz);

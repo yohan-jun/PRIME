@@ -1,0 +1,313 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>writeGradientEcho</title><meta name="generator" content="MATLAB 9.12"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2023-03-27"><meta name="DC.source" content="writeGradientEcho.m"><style type="text/css">
+html,body,div.content,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table.content th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table.content td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">check whether the timing of the sequence is correct</a></li><li><a href="#3">prepare sequence export</a></li><li><a href="#4">plot sequence and k-space diagrams</a></li><li><a href="#5">very optional slow step, but useful for testing during development e.g. for the real TE, TR or for staying within slewrate limits</a></li></ul></div><pre class="codeinput"><span class="comment">% set system limits</span>
+sys = mr.opts(<span class="string">'MaxGrad'</span>, 28, <span class="string">'GradUnit'</span>, <span class="string">'mT/m'</span>, <span class="keyword">...</span>
+    <span class="string">'MaxSlew'</span>, 150, <span class="string">'SlewUnit'</span>, <span class="string">'T/m/s'</span>, <span class="keyword">...</span>
+    <span class="string">'rfRingdownTime'</span>, 20e-6, <span class="string">'rfDeadTime'</span>, 100e-6, <span class="string">'adcDeadTime'</span>, 10e-6);
+
+seq=mr.Sequence(sys);           <span class="comment">% Create a new sequence object</span>
+fov=256e-3; Nx=256; Ny=256;     <span class="comment">% Define FOV and resolution</span>
+alpha=10;                       <span class="comment">% flip angle</span>
+sliceThickness=3e-3;            <span class="comment">% slice</span>
+TR=12e-3;                       <span class="comment">% repetition time TR</span>
+TE=5e-3;                        <span class="comment">% echo time TE</span>
+<span class="comment">%TE=[7.38 9.84]*1e-3;            % alternatively give a vector here to have multiple TEs (e.g. for field mapping)</span>
+
+<span class="comment">% more in-depth parameters</span>
+rfSpoilingInc=117;              <span class="comment">% RF spoiling increment</span>
+
+<span class="comment">% Create fat-sat pulse</span>
+<span class="comment">% (in Siemens interpreter from January 2019 duration is limited to 8.192 ms, and although product EPI uses 10.24 ms, 8 ms seems to be sufficient)</span>
+<span class="comment">% B0=2.89; % 1.5 2.89 3.0</span>
+<span class="comment">% sat_ppm=-3.45;</span>
+<span class="comment">% sat_freq=sat_ppm*1e-6*B0*lims.gamma;</span>
+<span class="comment">% rf_fs = mr.makeGaussPulse(110*pi/180,'system',lims,'Duration',8e-3,...</span>
+<span class="comment">%     'bandwidth',abs(sat_freq),'freqOffset',sat_freq);</span>
+<span class="comment">% gz_fs = mr.makeTrapezoid('z',sys,'delay',mr.calcDuration(rf_fs),'Area',1/1e-4); % spoil up to 0.1mm</span>
+
+<span class="comment">% Create alpha-degree slice selection pulse and gradient</span>
+[rf, gz] = mr.makeSincPulse(alpha*pi/180,<span class="string">'Duration'</span>,3e-3,<span class="keyword">...</span>
+    <span class="string">'SliceThickness'</span>,sliceThickness,<span class="string">'apodization'</span>,0.42,<span class="string">'timeBwProduct'</span>,4,<span class="string">'system'</span>,sys);
+
+<span class="comment">% Define other gradients and ADC events</span>
+deltak=1/fov;
+gx = mr.makeTrapezoid(<span class="string">'x'</span>,<span class="string">'FlatArea'</span>,Nx*deltak,<span class="string">'FlatTime'</span>,3.2e-3,<span class="string">'system'</span>,sys);
+adc = mr.makeAdc(Nx,<span class="string">'Duration'</span>,gx.flatTime,<span class="string">'Delay'</span>,gx.riseTime,<span class="string">'system'</span>,sys);
+gxPre = mr.makeTrapezoid(<span class="string">'x'</span>,<span class="string">'Area'</span>,-gx.area/2,<span class="string">'Duration'</span>,1e-3,<span class="string">'system'</span>,sys);
+gzReph = mr.makeTrapezoid(<span class="string">'z'</span>,<span class="string">'Area'</span>,-gz.area/2,<span class="string">'Duration'</span>,1e-3,<span class="string">'system'</span>,sys);
+phaseAreas = ((0:Ny-1)-Ny/2)*deltak;
+
+<span class="comment">% gradient spoiling</span>
+gxSpoil=mr.makeTrapezoid(<span class="string">'x'</span>,<span class="string">'Area'</span>,2*Nx*deltak,<span class="string">'system'</span>,sys);
+gzSpoil=mr.makeTrapezoid(<span class="string">'z'</span>,<span class="string">'Area'</span>,4/sliceThickness,<span class="string">'system'</span>,sys);
+
+<span class="comment">% Calculate timing</span>
+delayTE=ceil((TE - mr.calcDuration(gxPre) - gz.fallTime - gz.flatTime/2 <span class="keyword">...</span>
+    - mr.calcDuration(gx)/2)/seq.gradRasterTime)*seq.gradRasterTime;
+delayTR=ceil((TR - mr.calcDuration(gz) - mr.calcDuration(gxPre) <span class="keyword">...</span>
+    - mr.calcDuration(gx) - delayTE)/seq.gradRasterTime)*seq.gradRasterTime;
+assert(all(delayTE&gt;=0));
+assert(all(delayTR&gt;=mr.calcDuration(gxSpoil,gzSpoil)));
+
+rf_phase=0;
+rf_inc=0;
+
+<span class="comment">% Loop over phase encodes and define sequence blocks</span>
+<span class="keyword">for</span> i=1:Ny
+    <span class="keyword">for</span> c=1:length(TE)
+        <span class="comment">%seq.addBlock(rf_fs,gz_fs); % fat-sat</span>
+        rf.phaseOffset=rf_phase/180*pi;
+        adc.phaseOffset=rf_phase/180*pi;
+        rf_inc=mod(rf_inc+rfSpoilingInc, 360.0);
+        rf_phase=mod(rf_phase+rf_inc, 360.0);
+        <span class="comment">%</span>
+        seq.addBlock(rf,gz);
+        gyPre = mr.makeTrapezoid(<span class="string">'y'</span>,<span class="string">'Area'</span>,phaseAreas(i),<span class="string">'Duration'</span>,mr.calcDuration(gxPre),<span class="string">'system'</span>,sys);
+        seq.addBlock(gxPre,gyPre,gzReph);
+        seq.addBlock(mr.makeDelay(delayTE(c)));
+        seq.addBlock(gx,adc);
+        gyPre.amplitude=-gyPre.amplitude;
+        seq.addBlock(mr.makeDelay(delayTR(c)),gxSpoil,gyPre,gzSpoil)
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><h2 id="2">check whether the timing of the sequence is correct</h2><pre class="codeinput">[ok, error_report]=seq.checkTiming;
+
+<span class="keyword">if</span> (ok)
+    fprintf(<span class="string">'Timing check passed successfully\n'</span>);
+<span class="keyword">else</span>
+    fprintf(<span class="string">'Timing check failed! Error listing follows:\n'</span>);
+    fprintf([error_report{:}]);
+    fprintf(<span class="string">'\n'</span>);
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">Timing check passed successfully
+</pre><h2 id="3">prepare sequence export</h2><pre class="codeinput">seq.setDefinition(<span class="string">'FOV'</span>, [fov fov sliceThickness]);
+seq.setDefinition(<span class="string">'Name'</span>, <span class="string">'gre'</span>);
+
+seq.write(<span class="string">'gre.seq'</span>)       <span class="comment">% Write to pulseq file</span>
+
+<span class="comment">%seq.install('siemens');</span>
+</pre><h2 id="4">plot sequence and k-space diagrams</h2><pre class="codeinput">seq.plot(<span class="string">'timeRange'</span>, [0 5]*TR);
+
+<span class="comment">% k-space trajectory calculation</span>
+[ktraj_adc, t_adc, ktraj, t_ktraj, t_excitation, t_refocusing] = seq.calculateKspacePP();
+
+<span class="comment">% plot k-spaces</span>
+figure; plot(t_ktraj, ktraj'); <span class="comment">% plot the entire k-space trajectory</span>
+hold; plot(t_adc,ktraj_adc(1,:),<span class="string">'.'</span>); <span class="comment">% and sampling points on the kx-axis</span>
+figure; plot(ktraj(1,:),ktraj(2,:),<span class="string">'b'</span>); <span class="comment">% a 2D plot</span>
+axis(<span class="string">'equal'</span>); <span class="comment">% enforce aspect ratio for the correct trajectory display</span>
+hold;plot(ktraj_adc(1,:),ktraj_adc(2,:),<span class="string">'r.'</span>); <span class="comment">% plot the sampling points</span>
+</pre><pre class="codeoutput">Current plot held
+Current plot held
+</pre><img vspace="5" hspace="5" src="writeGradientEcho_01.png" alt=""> <img vspace="5" hspace="5" src="writeGradientEcho_02.png" alt=""> <img vspace="5" hspace="5" src="writeGradientEcho_03.png" alt=""> <h2 id="5">very optional slow step, but useful for testing during development e.g. for the real TE, TR or for staying within slewrate limits</h2><pre class="codeinput">rep = seq.testReport;
+fprintf([rep{:}]);
+</pre><pre class="codeoutput">Number of blocks: 1280
+Number of events:
+   RF:      256
+   Gx:      768
+   Gy:      512
+   Gz:      768
+   ADC:     256
+   Delay:     0
+Sequence duration: 3.072000s
+TE: 0.005000s
+TR: 0.012000s
+Flip angle: 10.00&deg;
+Unique k-space positions (a.k.a. columns, rows, etc): 256
+Unique k-space positions (a.k.a. columns, rows, etc): 256
+Dimensions: 2
+   Spatial resolution: 1.00 mm
+   Spatial resolution: 1.00 mm
+Repetitions/slices/contrasts: 1  range: [1 1]
+   65536 k-space position(s) repeated 1 times
+Cartesian encoding trajectory detected
+Block timing check passed successfully
+Max. Gradient: 1190476 Hz/m == 27.96 mT/m
+Max. Gradient: 549451 Hz/m == 12.91 mT/m
+Max. Gradient: 1190476 Hz/m == 27.96 mT/m
+Max. Slew Rate: 6.26566e+09 Hz/m/s == 147.16 T/m/s
+Max. Slew Rate: 6.37755e+09 Hz/m/s == 149.79 T/m/s
+Max. Slew Rate: 6.34921e+09 Hz/m/s == 149.13 T/m/s
+Max. Absolute Gradient: 1770978 Hz/m == 41.60 mT/m
+Max. Absolute Slew Rate: 1.09174e+10 Hz/m/s == 256.42 T/m/s
+</pre><img vspace="5" hspace="5" src="writeGradientEcho_04.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+% set system limits
+sys = mr.opts('MaxGrad', 28, 'GradUnit', 'mT/m', ...
+    'MaxSlew', 150, 'SlewUnit', 'T/m/s', ... 
+    'rfRingdownTime', 20e-6, 'rfDeadTime', 100e-6, 'adcDeadTime', 10e-6);
+
+seq=mr.Sequence(sys);           % Create a new sequence object
+fov=256e-3; Nx=256; Ny=256;     % Define FOV and resolution
+alpha=10;                       % flip angle
+sliceThickness=3e-3;            % slice
+TR=12e-3;                       % repetition time TR
+TE=5e-3;                        % echo time TE  
+%TE=[7.38 9.84]*1e-3;            % alternatively give a vector here to have multiple TEs (e.g. for field mapping)
+
+% more in-depth parameters
+rfSpoilingInc=117;              % RF spoiling increment
+
+% Create fat-sat pulse 
+% (in Siemens interpreter from January 2019 duration is limited to 8.192 ms, and although product EPI uses 10.24 ms, 8 ms seems to be sufficient)
+% B0=2.89; % 1.5 2.89 3.0
+% sat_ppm=-3.45;
+% sat_freq=sat_ppm*1e-6*B0*lims.gamma;
+% rf_fs = mr.makeGaussPulse(110*pi/180,'system',lims,'Duration',8e-3,...
+%     'bandwidth',abs(sat_freq),'freqOffset',sat_freq);
+% gz_fs = mr.makeTrapezoid('z',sys,'delay',mr.calcDuration(rf_fs),'Area',1/1e-4); % spoil up to 0.1mm
+
+% Create alpha-degree slice selection pulse and gradient
+[rf, gz] = mr.makeSincPulse(alpha*pi/180,'Duration',3e-3,...
+    'SliceThickness',sliceThickness,'apodization',0.42,'timeBwProduct',4,'system',sys);
+
+% Define other gradients and ADC events
+deltak=1/fov;
+gx = mr.makeTrapezoid('x','FlatArea',Nx*deltak,'FlatTime',3.2e-3,'system',sys);
+adc = mr.makeAdc(Nx,'Duration',gx.flatTime,'Delay',gx.riseTime,'system',sys);
+gxPre = mr.makeTrapezoid('x','Area',-gx.area/2,'Duration',1e-3,'system',sys);
+gzReph = mr.makeTrapezoid('z','Area',-gz.area/2,'Duration',1e-3,'system',sys);
+phaseAreas = ((0:Ny-1)-Ny/2)*deltak;
+
+% gradient spoiling
+gxSpoil=mr.makeTrapezoid('x','Area',2*Nx*deltak,'system',sys);
+gzSpoil=mr.makeTrapezoid('z','Area',4/sliceThickness,'system',sys);
+
+% Calculate timing
+delayTE=ceil((TE - mr.calcDuration(gxPre) - gz.fallTime - gz.flatTime/2 ...
+    - mr.calcDuration(gx)/2)/seq.gradRasterTime)*seq.gradRasterTime;
+delayTR=ceil((TR - mr.calcDuration(gz) - mr.calcDuration(gxPre) ...
+    - mr.calcDuration(gx) - delayTE)/seq.gradRasterTime)*seq.gradRasterTime;
+assert(all(delayTE>=0));
+assert(all(delayTR>=mr.calcDuration(gxSpoil,gzSpoil)));
+
+rf_phase=0;
+rf_inc=0;
+
+% Loop over phase encodes and define sequence blocks
+for i=1:Ny
+    for c=1:length(TE)
+        %seq.addBlock(rf_fs,gz_fs); % fat-sat
+        rf.phaseOffset=rf_phase/180*pi;
+        adc.phaseOffset=rf_phase/180*pi;
+        rf_inc=mod(rf_inc+rfSpoilingInc, 360.0);
+        rf_phase=mod(rf_phase+rf_inc, 360.0);
+        %
+        seq.addBlock(rf,gz);
+        gyPre = mr.makeTrapezoid('y','Area',phaseAreas(i),'Duration',mr.calcDuration(gxPre),'system',sys);
+        seq.addBlock(gxPre,gyPre,gzReph);
+        seq.addBlock(mr.makeDelay(delayTE(c)));
+        seq.addBlock(gx,adc);
+        gyPre.amplitude=-gyPre.amplitude;
+        seq.addBlock(mr.makeDelay(delayTR(c)),gxSpoil,gyPre,gzSpoil)
+    end
+end
+
+%% check whether the timing of the sequence is correct
+[ok, error_report]=seq.checkTiming;
+
+if (ok)
+    fprintf('Timing check passed successfully\n');
+else
+    fprintf('Timing check failed! Error listing follows:\n');
+    fprintf([error_report{:}]);
+    fprintf('\n');
+end
+
+%% prepare sequence export
+seq.setDefinition('FOV', [fov fov sliceThickness]);
+seq.setDefinition('Name', 'gre');
+
+seq.write('gre.seq')       % Write to pulseq file
+
+%seq.install('siemens');
+
+%% plot sequence and k-space diagrams
+
+seq.plot('timeRange', [0 5]*TR);
+
+% k-space trajectory calculation
+[ktraj_adc, t_adc, ktraj, t_ktraj, t_excitation, t_refocusing] = seq.calculateKspacePP();
+
+% plot k-spaces
+figure; plot(t_ktraj, ktraj'); % plot the entire k-space trajectory
+hold; plot(t_adc,ktraj_adc(1,:),'.'); % and sampling points on the kx-axis
+figure; plot(ktraj(1,:),ktraj(2,:),'b'); % a 2D plot
+axis('equal'); % enforce aspect ratio for the correct trajectory display
+hold;plot(ktraj_adc(1,:),ktraj_adc(2,:),'r.'); % plot the sampling points
+
+%% very optional slow step, but useful for testing during development e.g. for the real TE, TR or for staying within slewrate limits  
+
+rep = seq.testReport;
+fprintf([rep{:}]);
+
+
+##### SOURCE END #####
+--></body></html>

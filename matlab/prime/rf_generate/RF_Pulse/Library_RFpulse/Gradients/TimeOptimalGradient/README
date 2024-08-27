@@ -1,0 +1,24 @@
+This is the code accompanyig the paper: M. Lustig, S-J Kim and J. M. Pauly "A Fast Method for Designing Time-Optimal Gradient Waveforms for Arbitrary k-Space Trajectories" 2006, submitted to IEEE Transactions on Medical Imaging.
+
+Functions:
+	minTimeGradient.m  - The main function, and implementation of the time-optimal gradient design.
+	vdSpiralDesign.m   - A utility function to design spiral trajectories with variable densities.
+	@complex3d         - A utility class that extends the notion of complex values to 3D. A workaround
+			     to use minTimeGradient for 3D waveforms
+
+Examples:
+	example_trapezoid.m - designs a trapezoid gradient that corresponds to a line in k-space.
+	example_spiral.m - an example of a dual density spiral design.
+	example_circle.m - design of a circular trajectory
+	example_rosette.m - example of a time-optimal rosette trajectory design.
+
+
+For comments, bug reports etc, please write: mlustig at stanford dot edu
+
+Please feel free to redistribute and modify the code as long as you reference accordingly. 
+
+This software is not for commercial use.
+
+http://www.mlustig.com
+
+(c) Michael Lustig 2007

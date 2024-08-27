@@ -1,0 +1,83 @@
+%WARNING: need to make sure that gradient and rf go to zero at begin and
+%end of the pulse, e.g. for spiral need to have rewinder
+
+function create_header_parallel_new(g,b_est,oversample)
+
+G_length = length(g)
+B_length = G_length*oversample;
+n_coil = length(b_est)/B_length;
+
+for count = 1:n_coil
+    rf(count,:) = b_est(1+(count-1)*B_length:count*B_length);
+end
+
+
+%DATA READING OUT TO FILES
+
+max_rf = max(abs(rf),[],2);
+
+angle_rfs = angle(rf);
+index = angle_rfs<0;
+angle_rfs(index) = angle_rfs(index)+2*pi;
+
+%fid = fopen('pTx.float', 'wb');
+fid = fopen('pTx.float', 'w');
+
+fprintf(fid, '#%%Header.ArbitraryRFpulse \n');
+fprintf(fid,'[pTXPulse]\n');
+fprintf(fid,'NUsedChannels = %g\n', ncoils);
+fprintf(fid,'DimRF = %g\n', DimRF);
+fprintf(fid,'DimGradient = %g\n', DimGradient);
+
+fprintf(fid,'# ----------\n');
+
+for ChnCount = 1:ncoils
+    fprintf(fid,'[pTXPulse_ch%g]\n', ChnCount);
+    fprintf(fid,'NRFPoints     =  %g\n', B_length);
+    fprintf(fid,'NGradientPoints     =  %g\n\n', G_length);
+    fprintf(fid,'MaxRF     =  %g\n\n', max_rf(ChnCount));
+    for RFcount = 1:B_length
+        
+    fprintf(fid,'RF[%g] = %g     %g\n', RFcount, );
+    
+    
+    
+    
+    
+    fwrite(fid, # Test file for development
+
+
+fwrite(fidx, max_x*10, 'float32');
+fwrite(fidx, length(g(:,1)), 'float32');
+fwrite(fidx, g(:,1)*10, 'float32');
+
+fwrite(fidy, max_y*10, 'float32');
+fwrite(fidy, length(g(:,2)), 'float32');
+fwrite(fidy, g(:,2)*10, 'float32');
+
+fwrite(fidz, max_z*10, 'float32');
+fwrite(fidz, length(g(:,3)), 'float32');
+fwrite(fidz, g(:,3)*10, 'float32');
+
+fclose(fidx);
+fclose(fidy);
+fclose(fidz);
+
+angle_rfs = angle(rf);
+index = angle_rfs<0;
+angle_rfs(index) = angle_rfs(index)+2*pi;
+
+for (ii = 1:8)
+    fname_rfamp = sprintf('rf_amp_%d.float', ii);
+    fidrf_amp = fopen(fname_rfamp, 'wb');
+    fname_rfpha = sprintf('rf_pha_%d.float', ii);
+    fidrf_pha = fopen(fname_rfpha, 'wb');
+    fwrite(fidrf_amp, max_rf, 'float32');
+    fwrite(fidrf_amp, length(rf), 'float32');
+    fwrite(fidrf_amp, abs(rf(ii,1:end)), 'float32');
+    fwrite(fidrf_pha, max_rf, 'float32');
+    fwrite(fidrf_pha, length(rf), 'float32');
+    fwrite(fidrf_pha, angle_rfs(ii,1:end), 'float32');
+    fclose(fidrf_amp);
+    fclose(fidrf_pha);
+end
