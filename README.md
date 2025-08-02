@@ -4,7 +4,7 @@
 ![Alt text](figure/PRIME_2.jpg?raw=true "PRIME_2")
 
 This is the official code for **"PRIME: Phase Reversed Interleaved Multi-Echo acquisition enables highly accelerated distortion-free diffusion MRI"**.
-The related abstract is published at [ISMRM 2024](https://submissions.mirasmart.com/ISMRM2024/Handlers/ViewTeaser.ashx?esbpgm=6632_1010).
+The related abstract is published at [ISMRM 2024](https://submissions.mirasmart.com/ISMRM2024/Handlers/ViewTeaser.ashx?esbpgm=6632_1010) and [ISMRM 2025](https://submissions.mirasmart.com/ISMRM2025/Handlers/ViewTeaser.ashx?esbpgm=5650_514).
 
 The baseline pulseq code is forked from [here](https://github.com/pulseq/pulseq)\
 For dependencies and installation, please follow [here](https://pulseq.github.io/)
@@ -17,8 +17,14 @@ If you use the PRIME code in your project, please cite the following abstract:
 ```BibTeX
 @inproceedings{jun2024PRIME,
   title={{PRIME}: Phase Reversed Interleaved Multi-Echo acquisition enables highly accelerated distortion-free diffusion {MRI}},
-  author={Jun, Yohan and Liu, Qiang  and Cho, Jaejin  and Yong, Xingwang  and Fujita, Shohei and Huang, Y. Susie and Rathi, Yogesh and Bilgic, Berkin},
+  author={Jun, Yohan and Liu, Qiang and Cho, Jaejin and Yong, Xingwang and Fujita, Shohei and Huang, Y. Susie and Rathi, Yogesh and Bilgic, Berkin},
   journal={International Society for Magnetic Resonance in Medicine (ISMRM) Annual Meeting},
   year={2024}
+}
+@inproceedings{jun2025PRIME,
+  title={Phase Reversed Interleaved Multi-Echo ({PRIME}) With Phase, Field Map And Motion Navigators For Highly Accelerated Distortion-Free Diffusion {MRI}},
+  author={Jun, Yohan and Liu, Qiang and Gong, Ting and Cho, Jaejin and Fujita, Shohei and Yong, Xingwang and Huang, Y. Susie and Ning, Lipeng and Yendiki, Anastasia and Rathi, Yogesh and Bilgic, Berkin},
+  journal={International Society for Magnetic Resonance in Medicine (ISMRM) Annual Meeting},
+  year={2025}
 }
 ```
