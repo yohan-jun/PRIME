@@ -1,7 +1,7 @@
 # PRIME: Phase Reversed Interleaved Multi-Echo acquisition enables highly accelerated distortion-free diffusion MRI
 
-![Alt text](figure/PRIME1.jpg?raw=true "PRIME1")
-![Alt text](figure/PRIME2.jpg?raw=true "PRIME2")
+![Alt text](figure/PRIME1.jpg?raw=true "PRIME_1")
+![Alt text](figure/PRIME2.jpg?raw=true "PRIME_2")
 
 This is the official code for **"PRIME: Phase Reversed Interleaved Multi-Echo acquisition enables highly accelerated distortion-free diffusion MRI"**.
 The related abstract is published at [ISMRM 2024](https://submissions.mirasmart.com/ISMRM2024/Handlers/ViewTeaser.ashx?esbpgm=6632_1010).
